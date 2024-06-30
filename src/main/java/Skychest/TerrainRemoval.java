@@ -6,17 +6,13 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.tick.SimpleTickScheduler;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.Heightmap.Type;
 import net.minecraft.world.SaveProperties;
 import net.minecraft.world.level.LevelProperties;
 
@@ -26,7 +22,6 @@ import Skychest.Mixins.Access.BlockData;
 import Skychest.Mixins.Access.TickSchedule;
 
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashSet;
 
 
@@ -45,7 +40,7 @@ public final class TerrainRemoval {
              // Don't bother with empty sections
             if (section.isEmpty()) { continue; }
             else if (mode.isSkychest()) { whitelistSection(section); }
-            else { emptySection(section);}
+            else { sections[i] = emptySection(section);}
             // Flag for lighting recalculations
             world.getLightingProvider().setSectionStatus(ChunkSectionPos.from(chunk.getPos(),i),true);
         }
@@ -55,15 +50,6 @@ public final class TerrainRemoval {
                 chunk.removeBlockEntity(p);
             }
         }
-
-        // Generates fresh Heightmaps for the chunk
-        long[] blankHeightmap = new PackedIntegerArray(MathHelper.ceilLog2(chunk.getHeight() + 1), 256).getData();
-        // Heightmap::setTo should really be a static method, it doesn't use instance at all
-        chunk.getHeightmap(Type.MOTION_BLOCKING).setTo(chunk, Type.MOTION_BLOCKING, blankHeightmap);
-        chunk.getHeightmap(Type.MOTION_BLOCKING_NO_LEAVES).setTo(chunk, Type.MOTION_BLOCKING_NO_LEAVES, blankHeightmap);
-        chunk.getHeightmap(Type.OCEAN_FLOOR).setTo(chunk, Type.OCEAN_FLOOR, blankHeightmap);
-        chunk.getHeightmap(Type.WORLD_SURFACE).setTo(chunk, Type.WORLD_SURFACE, blankHeightmap);
-        Heightmap.populateHeightmaps(chunk, EnumSet.of(Type.MOTION_BLOCKING, Type.MOTION_BLOCKING_NO_LEAVES, Type.OCEAN_FLOOR, Type.WORLD_SURFACE));
     }
 
     // Remove all Non-Whitelisted Blocks from a ChunkSection
@@ -101,15 +87,13 @@ public final class TerrainRemoval {
     }
 
     // Remove all Blocks from a ChunkSection
-    private static void emptySection(ChunkSection section) {
-        // Simply replaces the existing container with an empty one
-        ((SectionData)section).setBlockStateContainer(
-            new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE)
+    private static ChunkSection emptySection(ChunkSection section) {
+        // Generates a new ChunkSection with old biome data
+        ChunkSection newSection = new ChunkSection(
+            new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE),
+            section.getBiomeContainer()
         );
-        // Set all the counters to 0
-        ((SectionData)section).setNonEmptyFluidCount((short)0);
-        ((SectionData)section).setNonEmptyBlockCount((short)0);
-        ((SectionData)section).setRandomTickableBlockCount((short)0);
+        return newSection;
     }
 
     // Removes all entities with IDs not specified in the whitelist

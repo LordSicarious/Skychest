@@ -1,8 +1,6 @@
 package Skychest.Mixins.Access;
 
-import net.minecraft.block.BlockState;
 import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.PalettedContainer;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -21,8 +19,4 @@ public interface SectionData {
     // Random Tick Count
     @Accessor("randomTickableBlockCount")
     public void setRandomTickableBlockCount(short count);
-
-    // Block Palette, for Void worlds
-    @Accessor("blockStateContainer")
-    public void setBlockStateContainer(PalettedContainer<BlockState> blockStateContainer);
 }

@@ -1,7 +1,9 @@
 package Skychest.Mixins.Generation;
 
+import net.minecraft.server.world.ServerLightingProvider;
 import net.minecraft.util.collection.BoundedRegionArray;
 import net.minecraft.util.collection.PackedIntegerArray;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.AbstractChunkHolder;
 import net.minecraft.world.chunk.Chunk;
@@ -36,11 +38,14 @@ public abstract class WorldGen {
     // So this is the best injection point available.
     @Inject(at = @At("HEAD"), method = "generateEntities")
     private static void generateEntities(ChunkGenerationContext context, ChunkGenerationStep step, BoundedRegionArray<AbstractChunkHolder> chunks, Chunk chunk, CallbackInfoReturnable<CompletableFuture<Chunk>> cir) {
-        // Skip if generating default world
+        // Get the Void Mode being used
         SaveProperties props = ((ServerAccess)(context.world())).getServer().getSaveProperties();
-        if (((LevelProperties)props).getVoidMode().isDefault()) { return; }
+        VoidMode mode = ((LevelProperties)props).getVoidMode();
+        if (mode.isDefault()) { return; }
+        // Store the top non-empty section before modification for future use in lighting
+        int topNonEmptySection = chunk.getHighestNonEmptySection();
         // This is where blocks are removed
-        TerrainRemoval.removeBlocks(chunk, context.world());
+        TerrainRemoval.removeBlocks(chunk, mode);
         // Generates fresh Heightmaps for the chunk
         long[] blankHeightmap = new PackedIntegerArray(MathHelper.ceilLog2(chunk.getHeight() + 1), 256).getData();
         // Heightmap::setTo should really be a static method, it doesn't use instance at all
@@ -51,14 +56,18 @@ public abstract class WorldGen {
         chunk.getHeightmap(Type.WORLD_SURFACE).setTo(chunk, Type.WORLD_SURFACE, blankHeightmap);
         Heightmap.populateHeightmaps(chunk, EnumSet.of(Type.MOTION_BLOCKING, Type.MOTION_BLOCKING_NO_LEAVES, Type.OCEAN_FLOOR, Type.WORLD_SURFACE));
         // Mark the lighting for recalculation
+        ServerLightingProvider prov = context.lightingProvider();
+        for (int i = 0; i < topNonEmptySection; i++) {
+            prov.setSectionStatus(ChunkSectionPos.from(chunk.getPos(),i),true);
+        }
         chunk.getChunkSkyLight().refreshSurfaceY(chunk);
         chunk.setLightOn(false);
-        context.lightingProvider().initializeLight(chunk, chunk.isLightOn());
-        context.lightingProvider().light(chunk, false);
+        prov.initializeLight(chunk, chunk.isLightOn());
+        prov.light(chunk, false);
         // Clear any scheduled ticks, this will save at least some of the floating suspicious sand/gravel
         TerrainRemoval.clearScheduledTicks(chunk);
         // Finally, remove all the entities
-        if (((LevelProperties)props).getVoidMode() != VoidMode.SKYCHEST_ALL_ENTITIES) {
+        if (mode != VoidMode.SKYCHEST_ALL_ENTITIES) {
             TerrainRemoval.removeEntities((ProtoChunk)chunk);
         }
     }

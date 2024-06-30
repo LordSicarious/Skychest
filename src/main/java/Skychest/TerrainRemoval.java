@@ -5,19 +5,14 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.tick.SimpleTickScheduler;
-import net.minecraft.world.SaveProperties;
-import net.minecraft.world.level.LevelProperties;
 
 import Skychest.Mixins.Access.SectionData;
-import Skychest.Mixins.Access.ServerAccess;
 import Skychest.Mixins.Access.BlockData;
 import Skychest.Mixins.Access.TickSchedule;
 
@@ -31,9 +26,7 @@ public final class TerrainRemoval {
     private static final HashSet<EntityType<?>> entityWhitelist = new HashSet<EntityType<?>>(Arrays.asList(Whitelists.ENTITY_WHITELIST));
 
     // Removes all blocks not specified in the whitelist
-    public static void removeBlocks(Chunk chunk, ServerWorld world) {
-        SaveProperties props = ((ServerAccess)world).getServer().getSaveProperties();
-        VoidMode mode = ((LevelProperties)props).getVoidMode();
+    public static void removeBlocks(Chunk chunk, VoidMode mode) {
         ChunkSection[] sections = chunk.getSectionArray();
         for (short i = 0; i < sections.length; i++) {
             ChunkSection section = sections[i];
@@ -41,8 +34,6 @@ public final class TerrainRemoval {
             if (section.isEmpty()) { continue; }
             else if (mode.isSkychest()) { whitelistSection(section); }
             else { sections[i] = emptySection(section);}
-            // Flag for lighting recalculations
-            world.getLightingProvider().setSectionStatus(ChunkSectionPos.from(chunk.getPos(),i),true);
         }
         // Remove any persistent block entities
         for (BlockPos p : chunk.getBlockEntityPositions()) {

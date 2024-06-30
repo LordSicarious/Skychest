@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "skychest",
+  "version": "1.0.1",
+
+  "name": "Skychest",
+  "description": "What if there was nothing but the loot?",
+  "authors": [
+    "Sicarious"
+  ],
+  "contact": {
+    "sources": "https://github.com/LordSicarious/Skychest/"
+  },
+
+  "license": "MIT",
+  "icon": "assets/skychest/icon.png",
+  "environment": "*",
+  "mixins": [
+    "mixins.skychest.json"
+  ],
+
+  "depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+  },
+  "custom": {
+    "loom:injected_interfaces": {
+      "net/minecraft/class_27": ["Skychest/VoidModeInterface"],
+      "net/minecraft/class_31": ["Skychest/VoidModeInterface"],
+      "net/minecraft/class_8100": ["Skychest/VoidModeInterface"]
+    }
+  }
+}
+

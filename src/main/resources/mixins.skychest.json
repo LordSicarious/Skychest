@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "Skychest.Mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "Access.BlockData",
+    "Access.ScreenData",
+    "Access.SectionData",
+    "Access.ServerAccess",
+    "Access.TickSchedule",
+    "Generation.BonusChestFix",
+    "Generation.ExitPortalFix",
+    "Generation.WorldGen",
+    "GUI.VoidModeCreateWorldScreen",
+    "GUI.VoidModeCreator",
+    "GUI.VoidModeProperties",
+    "GUI.VoidModeRecreate",
+    "GUI.VoidModeTab"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

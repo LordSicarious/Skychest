@@ -44,5 +44,5 @@ jar {
 }
 
 loom {
-  	accessWidenerPath = file("src/master/resources/Skychest.accesswidener")
+  	accessWidenerPath = file("src/main/resources/Skychest.accesswidener")
 }

@@ -36,20 +36,19 @@ public final class TerrainProcessing {
         VoidMode mode = ((LevelProperties)props).getVoidMode();
         // Skip step if the terrain is set to default
         if (mode.isDefault()) {
+            Heightmap.populateHeightmaps(chunk, ChunkStatus.NORMAL_HEIGHTMAP_TYPES);
             return CompletableFuture.completedFuture(chunk);
         } else if (mode.blockWhitelist() != null) {
             whitelistChunk(chunk, mode.blockWhitelist());
-            // Regenerate heightmaps after modification
-            Heightmap.populateHeightmaps(chunk, ChunkStatus.NORMAL_HEIGHTMAP_TYPES);
         } else if (mode == VoidMode.NOTHING) {
             emptyChunk(chunk);
-            // Generate a blank heightmap
-            long[] blankHeightmap = new PackedIntegerArray(MathHelper.ceilLog2(chunk.getHeight() + 1), 256).getData();
-            // Set all the height maps to blank
-            ChunkStatus.NORMAL_HEIGHTMAP_TYPES.forEach(
-                type -> chunk.getHeightmap(type).setTo(chunk, type, blankHeightmap)
-            );
         }
+        // Generate new heightmaps
+        long[] blankHeightmap = new PackedIntegerArray(MathHelper.ceilLog2(chunk.getHeight() + 1), 256).getData();
+        ChunkStatus.NORMAL_HEIGHTMAP_TYPES.forEach(
+            type -> chunk.getHeightmap(type).setTo(chunk, type, blankHeightmap)
+        );
+        Heightmap.populateHeightmaps(chunk, ChunkStatus.NORMAL_HEIGHTMAP_TYPES);
         clearScheduledTicks(chunk);
         return CompletableFuture.completedFuture(chunk);
     }

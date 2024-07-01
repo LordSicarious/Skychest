@@ -9,14 +9,17 @@ import net.minecraft.world.chunk.ChunkGenerationContext;
 import net.minecraft.world.chunk.ChunkGenerationStep;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.level.LevelProperties;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.SaveProperties;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import Skychest.VoidMode;
@@ -25,7 +28,7 @@ import Skychest.Mixins.Access.ServerAccess;
 // This class is responsible for initialising the post-processing on all chunks
 @Deprecated
 @Mixin(ChunkGenerating.class)
-public abstract class EntityProcessing {
+public abstract class GenerationStepModifications {
 
     // 
     @Inject(at = @At("RETURN"), method = "generateEntities")
@@ -44,4 +47,8 @@ public abstract class EntityProcessing {
             );
         }
     }
+
+    // redirects to skip generating heightmaps
+    @Redirect(method = "generateFeatures", at = @At(value = "INVOKE", target = "net/minecraft/world/Heightmap.populateHeightmaps(Lnet/minecraft/world/chunk/Chunk;Ljava/util/Set;)V"))
+    private static void skipHeightmaps(Chunk chunk, Set<Heightmap.Type> types) {}
 }

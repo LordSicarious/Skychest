@@ -135,7 +135,7 @@ public final class TerrainProcessing {
             ((TickSchedule)chunk.getFluidTickScheduler()).getScheduledTicks().clear();
             ((TickSchedule)chunk.getFluidTickScheduler()).getScheduledTicksSet().clear();
         }
-        if ((chunk.getFluidTickScheduler() instanceof SimpleTickScheduler)) {
+        if ((chunk.getBlockTickScheduler() instanceof SimpleTickScheduler)) {
             ((TickSchedule)chunk.getBlockTickScheduler()).getScheduledTicks().clear();
             ((TickSchedule)chunk.getBlockTickScheduler()).getScheduledTicksSet().clear();
         }

@@ -23,7 +23,7 @@ public abstract class ExitPortalFix {
     // The Exit Portal generates partially below world limit with no terrain around, shifting it up a block if so resolves this.
     @Inject(method = "generateEndPortal", at = @At(value = "INVOKE", shift = Shift.BEFORE,
         target = "net/minecraft/world/gen/feature/EndPortalFeature.generateIfValid(Lnet/minecraft/world/gen/feature/FeatureConfig;Lnet/minecraft/world/StructureWorldAccess;Lnet/minecraft/world/gen/chunk/ChunkGenerator;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/BlockPos;)Z"))
-    private void generateEndPortal(boolean killedTheDragon, CallbackInfo ci) {
+    private void fixEndPortal(boolean killedTheDragon, CallbackInfo ci) {
         Mutable pos = exitPortalLocation.mutableCopy();
         pos.setY(Math.max(pos.getY(),YLevels.END_MIN_Y+1));
         exitPortalLocation=pos;

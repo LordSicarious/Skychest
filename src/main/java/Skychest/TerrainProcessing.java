@@ -2,38 +2,66 @@ package Skychest;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityType;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.util.collection.BoundedRegionArray;
+import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.chunk.AbstractChunkHolder;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkGenerationContext;
+import net.minecraft.world.chunk.ChunkGenerationStep;
 import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.chunk.ProtoChunk;
+import net.minecraft.world.level.LevelProperties;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.SaveProperties;
 import net.minecraft.world.tick.SimpleTickScheduler;
 
 import Skychest.Mixins.Access.SectionData;
+import Skychest.Mixins.Access.ServerAccess;
 import Skychest.Mixins.Access.BlockData;
 import Skychest.Mixins.Access.TickSchedule;
 
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
 
 
-public final class TerrainRemoval {
-    
-    private static final HashSet<Block> blockWhitelist = new HashSet<Block>(Arrays.asList(Whitelists.BLOCK_WHITELIST));
-    private static final HashSet<EntityType<?>> entityWhitelist = new HashSet<EntityType<?>>(Arrays.asList(Whitelists.ENTITY_WHITELIST));
+public final class TerrainProcessing {
+
+    public static CompletableFuture<Chunk> processTerrain(ChunkGenerationContext context, ChunkGenerationStep step, BoundedRegionArray<AbstractChunkHolder> chunks, Chunk chunk) {
+        SaveProperties props = ((ServerAccess)(context.world())).getServer().getSaveProperties();
+        VoidMode mode = ((LevelProperties)props).getVoidMode();
+        // Skip step if the terrain is set to default
+        if (mode.isDefault()) {
+            return CompletableFuture.completedFuture(chunk);
+        } else if (mode.blockWhitelist() != null) {
+            whitelistChunk(chunk, mode.blockWhitelist());
+            // Regenerate heightmaps after modification
+            Heightmap.populateHeightmaps(chunk, ChunkStatus.NORMAL_HEIGHTMAP_TYPES);
+        } else if (mode == VoidMode.NOTHING) {
+            emptyChunk(chunk);
+            // Generate a blank heightmap
+            long[] blankHeightmap = new PackedIntegerArray(MathHelper.ceilLog2(chunk.getHeight() + 1), 256).getData();
+            // Set all the height maps to blank
+            ChunkStatus.NORMAL_HEIGHTMAP_TYPES.forEach(
+                type -> chunk.getHeightmap(type).setTo(chunk, type, blankHeightmap)
+            );
+        }
+        clearScheduledTicks(chunk);
+        return CompletableFuture.completedFuture(chunk);
+    }
 
     // Removes all blocks not specified in the whitelist
-    public static void removeBlocks(Chunk chunk, VoidMode mode) {
+    public static void whitelistChunk(Chunk chunk, HashSet<Block> whitelist) {
         ChunkSection[] sections = chunk.getSectionArray();
         for (short i = 0; i < sections.length; i++) {
             ChunkSection section = sections[i];
              // Don't bother with empty sections
             if (section.isEmpty()) { continue; }
-            else if (mode.isSkychest()) { whitelistSection(section); }
-            else { sections[i] = emptySection(section);}
+            else { whitelistSection(section, whitelist); }
         }
         // Remove any persistent block entities
         for (BlockPos p : chunk.getBlockEntityPositions()) {
@@ -43,8 +71,23 @@ public final class TerrainRemoval {
         }
     }
 
+    // Removes all blocks from a chunk in its entirety
+    public static void emptyChunk(Chunk chunk) {
+        ChunkSection[] sections = chunk.getSectionArray();
+        for (short i = 0; i < sections.length; i++) {
+            ChunkSection section = sections[i];
+             // Don't bother with empty sections
+            if (section.isEmpty()) { continue; }
+            else { emptySection(section); }
+        }
+        // Remove any persistent block entities
+        for (BlockPos p : chunk.getBlockEntityPositions()) {
+            chunk.removeBlockEntity(p);
+        }
+    }
+
     // Remove all Non-Whitelisted Blocks from a ChunkSection
-    public static void whitelistSection(ChunkSection section) {
+    public static void whitelistSection(ChunkSection section, HashSet<Block> whitelist) {
         BlockState state;
         short blockCount = 0, randomTickCount = 0;
         // Iterate through each block in section
@@ -55,7 +98,7 @@ public final class TerrainRemoval {
                     // Skip if it's already air
                     if (state.isAir()) { continue; }
                     // Check if it's a block we want to keep
-                    else if (blockWhitelist.contains(state.getBlock())) {
+                    else if (whitelist.contains(state.getBlock())) {
                         // Update block count trackers
                         blockCount++;
                         if (state.hasRandomTicks()) { randomTickCount++; }
@@ -85,11 +128,6 @@ public final class TerrainRemoval {
             section.getBiomeContainer()
         );
         return newSection;
-    }
-
-    // Removes all entities with IDs not specified in the whitelist
-    public static void removeEntities(ProtoChunk chunk) {
-        chunk.getEntities().removeIf(e -> !entityWhitelist.contains(EntityType.fromNbt(e).orElse(null)));
     }
 
     // Clears any ticks scheduled for the chunks during generation

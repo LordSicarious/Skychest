@@ -1,5 +1,5 @@
 # Skychest Challenge
-The Skychest Challenge Mod for Minecraft. The generation should be completely seed-compatible with Vanilla, so structures 
+The Skychest Challenge Mod for Minecraft. The generation should be completely seed-compatible with Vanilla, so structures boundaries, chest loot, and biomes should be identical to Vanilla generation.
 
 # Dependencies
 Skychest relies on the Fabric modloader. For instructions on installing Fabric, visit their homepage at https://fabricmc.net/

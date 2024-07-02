@@ -9,34 +9,33 @@ import net.minecraft.entity.EntityType;
 
 
 public enum Whitelist {
-    SKYCHEST;
+    ALL,
+    NONE,
+    CONTAINERS;
 
-    private static HashSet<Block> skychestBlocks;
-    private static HashSet<EntityType<?>> skychestEntities;
-    
+    private static HashSet<Block> containerBlocks;
+    private static HashSet<EntityType<?>> containerEntities;
 
-    public HashSet<Block> getBlockWhitelist() {
+    public boolean includes(Block block) {
         switch (this) {
-            case SKYCHEST :
-                return skychestBlocks;
-            default :
-                return null;
+            case ALL : return true;
+            case NONE : return false;
+            case CONTAINERS : return containerBlocks.contains(block);
+            default : return false;
         }
-
     }
 
-    public HashSet<EntityType<?>> getEntityWhitelist() {
+    public boolean includes(EntityType<?> entity) {
         switch (this) {
-            case SKYCHEST :
-                return skychestEntities;
-            default :
-                return null;
+            case ALL : return true;
+            case NONE : return false;
+            case CONTAINERS : return containerEntities.contains(entity);
+            default : return false;
         }
-
     }
 
     static {
-        final Block[] BLOCK_WHITELIST_SKYCHEST = {
+        final Block[] CONTAINER_BLOCKS = {
             // Actual Storage
             Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.ENDER_CHEST, Blocks.BARREL, Blocks.SHULKER_BOX,
             Blocks.WHITE_SHULKER_BOX, Blocks.LIGHT_GRAY_SHULKER_BOX, Blocks.GRAY_SHULKER_BOX, Blocks.BLACK_SHULKER_BOX,
@@ -64,9 +63,9 @@ public enum Whitelist {
             Blocks.SUSPICIOUS_GRAVEL, Blocks.SUSPICIOUS_SAND, Blocks.VAULT, Blocks.END_PORTAL_FRAME
         };
 
-        skychestBlocks = new HashSet<Block>(Arrays.asList(BLOCK_WHITELIST_SKYCHEST));
+        containerBlocks = new HashSet<Block>(Arrays.asList(CONTAINER_BLOCKS));
 
-        final EntityType<?>[] ENTITY_WHITELIST_SKYCHEST = {
+        final EntityType<?>[] CONTAINER_ENTITIES = {
             EntityType.ITEM_FRAME,
             EntityType.GLOW_ITEM_FRAME,
             EntityType.CHEST_MINECART,
@@ -76,6 +75,6 @@ public enum Whitelist {
             EntityType.ARMOR_STAND
         };
         
-        skychestEntities = new HashSet<EntityType<?>>(Arrays.asList(ENTITY_WHITELIST_SKYCHEST));
+        containerEntities = new HashSet<EntityType<?>>(Arrays.asList(CONTAINER_ENTITIES));
     }
 }

@@ -1,9 +1,5 @@
 package Skychest;
 
-import java.util.HashSet;
-
-import net.minecraft.block.Block;
-import net.minecraft.entity.EntityType;
 import net.minecraft.text.Text;
 
 public enum VoidMode {
@@ -31,22 +27,27 @@ public enum VoidMode {
         return this == DEFAULT;
     }
 
-    public HashSet<Block> blockWhitelist() {
+    public Whitelist blockWhitelist() {
         switch (this) {
+            case DEFAULT :
+                return Whitelist.ALL;
             case SKYCHEST :
             case SKYCHEST_ALL_ENTITIES :
-                return Whitelist.SKYCHEST.getBlockWhitelist();
+                return Whitelist.CONTAINERS;
             default :
-                return null;
+                return Whitelist.NONE;
         }
     }
 
-    public HashSet<EntityType<?>> entityWhitelist() {
+    public Whitelist entityWhitelist() {
         switch (this) {
+            case DEFAULT :
+            case SKYCHEST_ALL_ENTITIES :
+                return Whitelist.ALL;
             case SKYCHEST :
-                return Whitelist.SKYCHEST.getEntityWhitelist();
+                return Whitelist.CONTAINERS;
             default :
-                return null;
+                return Whitelist.NONE;
         }
     }
 }

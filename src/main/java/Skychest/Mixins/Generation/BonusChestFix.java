@@ -28,7 +28,7 @@ public abstract class BonusChestFix {
         BlockPos p = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, context.getOrigin());
         System.out.println("Vanilla Position: " + blockPos.get().toString());
         System.out.println("Origin Position: " + p.toString());
-        if (p.getY() <= 1+world.getBottomY() || blockPos.get().getSquaredDistance(p) > 100) {
+        if (p.getY() <= 1+world.getBottomY() || blockPos.get().getSquaredDistance(p) > 20) {
             blockPos.set(p);
         }
     }

@@ -1,6 +1,5 @@
 package Skychest;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluids;
@@ -14,7 +13,6 @@ import net.minecraft.world.chunk.ChunkGenerationContext;
 import net.minecraft.world.chunk.ChunkGenerationStep;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.SaveProperties;
@@ -24,7 +22,6 @@ import Skychest.Mixins.Access.ServerAccess;
 import Skychest.Mixins.Access.BlockData;
 import Skychest.Mixins.Access.TickSchedule;
 
-import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
 
@@ -34,14 +31,8 @@ public final class TerrainProcessing {
         SaveProperties props = ((ServerAccess)(context.world())).getServer().getSaveProperties();
         VoidMode mode = ((LevelProperties)props).getVoidMode();
         // Skip step if the terrain is set to default
-        if (mode.isDefault()) {
-            Heightmap.populateHeightmaps(chunk, ChunkStatus.NORMAL_HEIGHTMAP_TYPES);
-            return CompletableFuture.completedFuture(chunk);
-        } else if (mode.blockWhitelist() != null) {
-            whitelistChunk(chunk, mode.blockWhitelist());
-        } else if (mode == VoidMode.NOTHING) {
-            emptyChunk(chunk);
-        }
+        if (mode.blockWhitelist() == Whitelist.ALL) { return CompletableFuture.completedFuture(chunk); }
+        whitelistChunk(chunk, mode.blockWhitelist());
         // Generate new heightmaps
         long[] blankHeightmap = new PackedIntegerArray(MathHelper.ceilLog2(chunk.getHeight() + 1), 256).getData();
         ChunkStatus.NORMAL_HEIGHTMAP_TYPES.forEach(
@@ -53,7 +44,7 @@ public final class TerrainProcessing {
     }
 
     // Removes all blocks not specified in the whitelist
-    public static void whitelistChunk(Chunk chunk, HashSet<Block> whitelist) {
+    public static void whitelistChunk(Chunk chunk, Whitelist whitelist) {
         ChunkSection[] sections = chunk.getSectionArray();
         for (short i = 0; i < sections.length; i++) {
             ChunkSection section = sections[i];
@@ -69,25 +60,10 @@ public final class TerrainProcessing {
         }
     }
 
-    // Removes all blocks from a chunk in its entirety
-    public static void emptyChunk(Chunk chunk) {
-        ChunkSection[] sections = chunk.getSectionArray();
-        for (short i = 0; i < sections.length; i++) {
-            ChunkSection section = sections[i];
-             // Don't bother with empty sections
-            if (section.isEmpty()) { continue; }
-            else { emptySection(section); }
-        }
-        // Remove any persistent block entities
-        for (BlockPos p : chunk.getBlockEntityPositions()) {
-            chunk.removeBlockEntity(p);
-        }
-    }
 
     // Remove all Non-Whitelisted Blocks from a ChunkSection
-    public static void whitelistSection(ChunkSection section, HashSet<Block> whitelist) {
+    public static void whitelistSection(ChunkSection section, Whitelist whitelist) {
         BlockState state;
-        short blockCount = 0, randomTickCount = 0;
         // Iterate through each block in section
         for (short dy = 0; dy < 16; dy++) {
             for (short dx = 0; dx < 16; dx++) {
@@ -96,10 +72,7 @@ public final class TerrainProcessing {
                     // Skip if it's already air
                     if (state.isAir()) { continue; }
                     // Check if it's a block we want to keep
-                    else if (whitelist.contains(state.getBlock())) {
-                        // Update block count trackers
-                        blockCount++;
-                        if (state.hasRandomTicks()) { randomTickCount++; }
+                    else if (whitelist.includes(state.getBlock())) {
                         // Handle Waterlogged Stuff
                         if(!state.getFluidState().isEmpty()) {
                             ((BlockData)state).setFluidState(Fluids.EMPTY.getDefaultState());
@@ -112,20 +85,8 @@ public final class TerrainProcessing {
                 }
             }
         }
-        // Update Section Counters
+        // Set fluid counter to 0, as removing fluids directly isn't accounted for in 'ChunkSection::setBlockState'
         ((SectionData)section).setNonEmptyFluidCount((short)0);
-        ((SectionData)section).setNonEmptyBlockCount(blockCount);
-        ((SectionData)section).setRandomTickableBlockCount(randomTickCount);
-    }
-
-    // Remove all Blocks from a ChunkSection
-    private static ChunkSection emptySection(ChunkSection section) {
-        // Generates a new ChunkSection with old biome data
-        ChunkSection newSection = new ChunkSection(
-            new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE),
-            section.getBiomeContainer()
-        );
-        return newSection;
     }
 
     // Clears any ticks scheduled for the chunks during generation

@@ -18,10 +18,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
 import Skychest.VoidMode;
+import Skychest.Whitelist;
 import Skychest.Mixins.Access.ServerAccess;
 
 // This class is responsible for initialising the post-processing on all chunks
@@ -35,14 +35,11 @@ public abstract class GenerationStepModifications {
         // Get the Void Mode being used
         SaveProperties props = ((ServerAccess)(context.world())).getServer().getSaveProperties();
         VoidMode mode = ((LevelProperties)props).getVoidMode();
-        if (mode.isDefault()) { return; }
-        if (mode == VoidMode.NOTHING) {
-            ((ProtoChunk)chunk).getEntities().clear();
-        }
-        HashSet<EntityType<?>> whitelist = mode.entityWhitelist();
-        if (whitelist != null) {
+        if (mode.entityWhitelist() == Whitelist.ALL) { return; }
+        else if (mode.entityWhitelist() == Whitelist.NONE) { ((ProtoChunk)chunk).getEntities().clear(); return; }
+        else {
             ((ProtoChunk)chunk).getEntities().removeIf(
-                e -> !whitelist.contains(EntityType.fromNbt(e).orElse(null))
+                e -> !mode.entityWhitelist().includes(EntityType.fromNbt(e).orElse(null))
             );
         }
     }

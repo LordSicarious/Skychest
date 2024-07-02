@@ -18,7 +18,6 @@ import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.level.LevelProperties;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.SaveProperties;
-import net.minecraft.world.tick.SimpleTickScheduler;
 
 import Skychest.Mixins.Access.SectionData;
 import Skychest.Mixins.Access.ServerAccess;
@@ -131,13 +130,9 @@ public final class TerrainProcessing {
 
     // Clears any ticks scheduled for the chunks during generation
     public static void clearScheduledTicks(Chunk chunk) {
-        if (chunk.getFluidTickScheduler() instanceof SimpleTickScheduler) {
-            ((TickSchedule)chunk.getFluidTickScheduler()).getScheduledTicks().clear();
-            ((TickSchedule)chunk.getFluidTickScheduler()).getScheduledTicksSet().clear();
-        }
-        if ((chunk.getBlockTickScheduler() instanceof SimpleTickScheduler)) {
-            ((TickSchedule)chunk.getBlockTickScheduler()).getScheduledTicks().clear();
-            ((TickSchedule)chunk.getBlockTickScheduler()).getScheduledTicksSet().clear();
-        }
+        ((TickSchedule)chunk.getFluidTickScheduler()).getScheduledTicks().clear();
+        ((TickSchedule)chunk.getFluidTickScheduler()).getScheduledTicksSet().clear();
+        ((TickSchedule)chunk.getBlockTickScheduler()).getScheduledTicks().clear();
+        ((TickSchedule)chunk.getBlockTickScheduler()).getScheduledTicksSet().clear();
     }
 }

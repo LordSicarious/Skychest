@@ -9,7 +9,7 @@ import net.minecraft.world.chunk.ChunkGenerationContext;
 import net.minecraft.world.chunk.ChunkGenerationStep;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.level.LevelProperties;
-import net.minecraft.world.Heightmap;
+import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.SaveProperties;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,7 +19,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import Skychest.VoidMode;
@@ -48,7 +47,8 @@ public abstract class GenerationStepModifications {
         }
     }
 
-    // redirects to skip generating heightmaps
-    @Redirect(method = "generateFeatures", at = @At(value = "INVOKE", target = "net/minecraft/world/Heightmap.populateHeightmaps(Lnet/minecraft/world/chunk/Chunk;Ljava/util/Set;)V"))
-    private static void skipHeightmaps(Chunk chunk, Set<Heightmap.Type> types) {}
+    // redirects to skip generating leaf/fluid ticks
+    @Redirect(method = "generateFeatures", at = @At(value = "INVOKE", target = "net/minecraft/world/gen/chunk/Blender.tickLeavesAndFluids(Lnet/minecraft/world/ChunkRegion;Lnet/minecraft/world/chunk/Chunk;)V"))
+    private static void skipTicks(ChunkRegion region, Chunk chunk) {}
+
 }
